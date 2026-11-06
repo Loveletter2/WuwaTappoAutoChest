@@ -1,5 +1,10 @@
 # WuwaTappo 自动开箱助手
 
+[![build](https://github.com/Loveletter2/WuwaTappoAutoChest/actions/workflows/build.yml/badge.svg)](https://github.com/Loveletter2/WuwaTappoAutoChest/actions/workflows/build.yml)
+[![release](https://img.shields.io/github/v/release/Loveletter2/WuwaTappoAutoChest)](https://github.com/Loveletter2/WuwaTappoAutoChest/releases)
+[![license](https://img.shields.io/github/license/Loveletter2/WuwaTappoAutoChest)](LICENSE)
+[![platform](https://img.shields.io/badge/platform-Windows-0078d4)](https://github.com/Loveletter2/WuwaTappoAutoChest/releases)
+
 一个 Windows 小工具：自动识别 **WuwaTappo 桌宠**旁边的宝箱气泡，确认坐标确实属于桌宠窗口后，模拟一次鼠标左键领取。
 
 只做两件事：**看屏幕** + **点鼠标**。不读写存档、不改内存、不调用私有接口、不绕过服务端的宝箱冷却。
