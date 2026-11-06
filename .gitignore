@@ -1,0 +1,30 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ---- PyInstaller ----
+build/
+dist/
+*.spec
+
+# ---- 运行时产物（在 %LOCALAPPDATA% 下，不会出现在仓库里，这里只是兜底） ----
+autochest.log
+detect_preview.png
+preview.jpg
+stats.json
+config.json
+edge-profile-*/
+edge-stderr.log
+
+# ---- 打包产物 ----
+WuwaTappoAutoChest.exe
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

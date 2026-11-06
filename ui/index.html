@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a0d12">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23f0b45e'/%3E%3Cpath d='M5 10h14v8H5z' fill='%238b5e3c'/%3E%3Cpath d='M5 12h14M10.8 12h2.4v2.4h-2.4z' stroke='%23f0b45e' stroke-width='1.2'/%3E%3C/svg%3E">
+<title>WuwaTappo 自动开箱</title>
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#0a0d12;
+  --panel:#111620;
+  --line:#222b39;
+  --line2:#2b3646;
+  --text:#e9eef7;
+  --muted:#8c99ac;
+  --dim:#5f6c80;
+  --accent:#f0b45e;
+  --accent2:#ffd08a;
+  --ok:#5dcaa5;
+  --warn:#e8b45c;
+  --err:#e57373;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+html{background:#07090d;display:flex;align-items:center;justify-content:center}
+body{
+  background:
+    radial-gradient(90% 55% at 100% 0%, rgba(240,180,94,.07), transparent 60%),
+    radial-gradient(70% 40% at 0% 100%, rgba(93,202,165,.045), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:"Microsoft YaHei UI","Segoe UI",system-ui,-apple-system,sans-serif;
+  padding:14px 14px 10px;
+  width:min(420px,100vw);
+  height:680px;
+  max-height:100vh;
+  margin:0;
+  border:1px solid #1a2230;
+  border-radius:18px;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  user-select:none;
+}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:#2a3444;border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 2px 0;flex:none}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.logo{
+  width:38px;height:38px;border-radius:12px;flex:none;
+  background:linear-gradient(150deg,#302413,#1a1510);
+  border:1px solid #4d3a20;
+  display:grid;place-items:center;
+  box-shadow:inset 0 1px 0 rgba(255,208,138,.12), 0 6px 16px rgba(0,0,0,.25);
+}
+.logo svg{width:22px;height:22px}
+h1{font-size:14.5px;font-weight:600;margin:0;letter-spacing:.2px;white-space:nowrap}
+.sub{font-size:10.5px;color:var(--dim);margin-top:2px;white-space:nowrap}
+.pill{
+  display:flex;align-items:center;gap:6px;font-size:10.5px;padding:6px 10px;border-radius:999px;flex:none;
+  background:rgba(93,202,165,.10);color:var(--ok);border:1px solid rgba(93,202,165,.20);
+  transition:.2s;
+}
+.pill i{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 1.8s infinite}
+.pill.paused,.pill.busy{background:rgba(240,180,94,.10);color:var(--accent);border-color:rgba(240,180,94,.22)}
+.pill.busy i{animation-duration:.8s}
+.pill.off{background:rgba(229,115,115,.08);color:var(--err);border-color:rgba(229,115,115,.18)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 currentColor;opacity:1}70%{box-shadow:0 0 0 5px transparent;opacity:.75}100%{box-shadow:0 0 0 0 transparent;opacity:1}}
+
+.hero{
+  position:relative;border-radius:16px;padding:14px 16px 12px;flex:none;overflow:hidden;
+  background:
+    radial-gradient(120% 150% at 100% 0%, rgba(240,180,94,.10), transparent 55%),
+    linear-gradient(160deg,#171d29,#111621 72%);
+  border:1px solid #26303f;
+  box-shadow:0 10px 30px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.03);
+}
+.hero:after{content:"";position:absolute;left:18px;right:18px;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(240,180,94,.55),transparent)}
+.hero-top{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--muted)}
+.total b{color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+.hero-main{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+.count{font-size:42px;font-weight:600;line-height:1;letter-spacing:-1.5px;font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:5px}
+.count small{font-size:11px;color:var(--muted);font-weight:400;letter-spacing:0}
+.ring{
+  --p:0;width:76px;height:76px;border-radius:50%;flex:none;
+  background:conic-gradient(var(--accent) calc(var(--p)*1%), #232c3a 0);
+  display:grid;place-items:center;
+  box-shadow:0 0 22px rgba(240,180,94,.10);
+  transition:background .35s linear;
+}
+.ring-in{width:62px;height:62px;border-radius:50%;background:#10151e;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:1px solid rgba(255,255,255,.03)}
+.ring-in b{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.ring-in small{font-size:9.5px;color:var(--dim)}
+.hint{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hint .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex:none;opacity:.95}
+.hint.paused .dot{background:var(--dim)}
+
+.actions{display:flex;gap:8px;flex:none}
+.primary{
+  flex:1;height:44px;border:0;border-radius:12px;cursor:pointer;
+  background:linear-gradient(180deg,#f7c77e,#e9a94b);
+  color:#241706;font-weight:600;font-size:13px;font-family:inherit;
+  box-shadow:0 7px 18px rgba(233,169,75,.18), inset 0 1px 0 rgba(255,255,255,.35);
+  transition:filter .15s, transform .12s, background .2s;
+}
+.primary:hover{filter:brightness(1.05)}
+.primary:active{transform:translateY(1px)}
+.primary.paused{background:linear-gradient(180deg,#253143,#1a2230);color:#dce6f3;box-shadow:none;border:1px solid #2e3a4c}
+.icon-btn{
+  width:44px;height:44px;border-radius:12px;border:1px solid #2a3444;background:#141a24;color:#aab6c8;
+  display:grid;place-items:center;cursor:pointer;transition:.15s;flex:none;
+}
+.icon-btn:hover{border-color:#3a475c;color:#e9eef7;background:#18202c}
+.icon-btn:active{transform:translateY(1px)}
+.icon-btn:disabled{opacity:.4;cursor:default;transform:none}
+.icon-btn svg{width:18px;height:18px}
+.spin{animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.card{border:1px solid var(--line);background:linear-gradient(180deg,#121823,#10151e);border-radius:14px;flex:none}
+.sec-head{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;color:var(--muted);padding:9px 12px 8px}
+.sec-head .link{font-size:10.5px;color:var(--accent);background:none;border:0;cursor:pointer;padding:0;font-family:inherit}
+.sec-head .link:hover{color:var(--accent2)}
+
+.settings{padding:11px 13px 12px}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#c6d0de}
+.row b{color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+input[type=range]{
+  width:100%;height:4px;margin:12px 0 2px;-webkit-appearance:none;appearance:none;
+  background:#242e3d;border-radius:999px;outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;
+  background:var(--accent);border:3px solid #10151e;
+  box-shadow:0 0 0 1px var(--accent),0 2px 8px rgba(240,180,94,.35);
+  transition:transform .12s;
+}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.12)}
+.switchrow{margin-top:9px}
+.switch{position:relative;width:38px;height:22px;display:inline-block;flex:none}
+.switch input{display:none}
+.switch i{position:absolute;inset:0;background:#242e3d;border-radius:999px;transition:.2s;cursor:pointer}
+.switch i:after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#8b97a8;top:3px;left:3px;transition:.2s}
+.switch input:checked + i{background:rgba(240,180,94,.22)}
+.switch input:checked + i:after{left:19px;background:var(--accent);box-shadow:0 0 8px rgba(240,180,94,.4)}
+
+.rules{padding:10px 13px 10px}
+.rule-title{font-size:10.5px;color:var(--muted);margin-bottom:5px}
+.rule-row{display:flex;align-items:center;gap:7px;font-size:10.5px;color:#9fadc2;line-height:1.75}
+.rule-row i{width:4px;height:4px;border-radius:50%;background:#3d4a5e;flex:none}
+
+.logs{display:flex;flex-direction:column;min-height:86px;flex:1;overflow:hidden}
+.log-list{flex:1;overflow:auto;padding:0 12px 10px;font-family:"Cascadia Mono",Consolas,"Courier New",monospace;font-size:10.5px;line-height:1.75}
+.log-item{display:flex;gap:8px;opacity:0;animation:fade .25s forwards}
+@keyframes fade{to{opacity:1}}
+.log-item .t{color:#526079;flex:none}
+.log-item .m{color:#a9b6c8;word-break:break-word}
+.log-item.ok .m{color:#7fd6b6}
+.log-item.warn .m{color:#e8b45c}
+.log-item.err .m{color:#e58a8a}
+.log-empty{color:#465267;font-size:10.5px;padding:2px 0}
+
+footer{display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#5e6b80;padding:0 2px;flex:none}
+footer button{background:none;border:0;color:#7c8aa0;font-size:10px;cursor:pointer;font-family:inherit;padding:2px 0}
+footer button:hover{color:#e58a8a}
+
+.toast{
+  position:fixed;left:50%;bottom:34px;transform:translate(-50%,10px);
+  background:#1b2432;border:1px solid #2e3b4d;color:#dbe5f2;
+  font-size:11px;padding:8px 13px;border-radius:10px;opacity:0;pointer-events:none;
+  transition:.22s;z-index:40;box-shadow:0 10px 30px rgba(0,0,0,.4);white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.ok{border-color:rgba(93,202,165,.35)}
+.toast.warn{border-color:rgba(240,180,94,.4)}
+
+.modal{position:fixed;inset:0;background:rgba(4,7,11,.66);display:none;align-items:center;justify-content:center;padding:22px;z-index:30;backdrop-filter:blur(3px)}
+.modal.show{display:flex;animation:fade .18s}
+.modal .box{width:100%;background:#151b26;border:1px solid #2b3646;border-radius:15px;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.modal h3{font-size:13px;margin:0 0 6px;font-weight:600}
+.modal p{font-size:11px;color:var(--muted);margin:0 0 14px;line-height:1.65}
+.modal .btns{display:flex;gap:8px}
+.modal button{flex:1;height:36px;border-radius:9px;border:1px solid #2e3a4c;background:#1a2230;color:#c9d4e3;font-size:12px;cursor:pointer;font-family:inherit}
+.modal button:hover{background:#202a3a}
+.modal button.danger{background:#3a1e1e;border-color:#5a2a2a;color:#f0a0a0}
+.modal button.danger:hover{background:#452323}
+
+.preview-modal .box{padding:0;overflow:hidden;max-height:calc(100vh - 44px);display:flex;flex-direction:column}
+.preview-modal .phead{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-bottom:1px solid #222b39;font-size:11px;color:var(--muted)}
+.preview-modal .phead b{color:var(--text);font-weight:600;font-size:12px;margin-right:6px}
+.preview-modal .pbody{background:#0b0f16;overflow:auto;min-height:80px;display:grid;place-items:center}
+.preview-modal .pbody img{width:100%;display:block}
+.preview-modal .pempty{color:var(--dim);font-size:11px;padding:40px 20px;text-align:center;line-height:1.7}
+.preview-modal .pfoot{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;border-top:1px solid #222b39;font-size:10.5px;color:var(--dim)}
+.preview-modal .pfoot button{background:none;border:0;color:var(--accent);font-size:10.5px;cursor:pointer;padding:0;font-family:inherit}
+.preview-modal .close{width:24px;height:24px;border-radius:7px;border:1px solid #2e3a4c;background:#1a2230;color:#aab6c8;cursor:pointer;display:grid;place-items:center;font-size:12px;padding:0}
+.preview-modal .close:hover{color:#fff;background:#222d3d}
+
+body.offline .pill{background:rgba(229,115,115,.08);color:var(--err);border-color:rgba(229,115,115,.18)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#f0b45e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 10.5 5.2 8.2A2 2 0 0 1 7 7.2h10a2 2 0 0 1 1.8 1L20 10.5"/>
+        <rect x="3.5" y="10.5" width="17" height="9" rx="2"/>
+        <path d="M3.5 13.2h17M10.8 13.2h2.4v2.4h-2.4z"/>
+      </svg>
+    </div>
+    <div>
+      <h1>自动开箱</h1>
+      <div class="sub">WuwaTappo 桌宠助手</div>
+    </div>
+  </div>
+  <div class="pill" id="statusPill"><i></i><span id="statusText">连接中</span></div>
+</header>
+
+<section class="hero">
+  <div class="hero-top">
+    <span>本次已领取</span>
+    <span class="total">累计 <b id="total">0</b></span>
+  </div>
+  <div class="hero-main">
+    <div class="count"><span id="claimed">0</span><small>个</small></div>
+    <div class="ring" id="ring">
+      <div class="ring-in"><b id="countdown">--</b><small>秒后检查</small></div>
+    </div>
+  </div>
+  <div class="hint" id="hint"><i class="dot"></i><span id="hintText">正在连接后台…</span></div>
+</section>
+
+<div class="actions">
+  <button class="primary" id="toggle">暂停监控</button>
+  <button class="icon-btn" id="scan" title="立即识别">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/>
+      <circle cx="12" cy="12" r="3.2"/>
+    </svg>
+  </button>
+  <button class="icon-btn" id="preview" title="识别预览">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3.5" y="5" width="17" height="14" rx="2"/>
+      <circle cx="8.5" cy="9.5" r="1.4"/>
+      <path d="m4.5 17 4.8-4.5 3.4 3.1 2.6-2.2 4.2 3.6"/>
+    </svg>
+  </button>
+  <button class="icon-btn" id="folder" title="打开数据目录">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l1.6 2H19a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/>
+    </svg>
+  </button>
+</div>
+
+<section class="card settings">
+  <div class="row"><span>检查间隔</span><b id="intervalVal">15 秒</b></div>
+  <input id="interval" type="range" min="5" max="60" step="5" value="15" autocomplete="off">
+  <div class="row switchrow">
+    <span>启动时自动监控</span>
+    <label class="switch"><input type="checkbox" id="autoStart" checked><i></i></label>
+  </div>
+</section>
+
+<section class="card rules">
+  <div class="rule-title">宝箱规则</div>
+  <div class="rule-row"><i></i><span>30 分钟生成 1 个，最多存 2 个</span></div>
+  <div class="rule-row"><i></i><span>领取消耗 1000 字符，本工具只负责点击</span></div>
+</section>
+
+<section class="card logs">
+  <div class="sec-head"><span>运行日志</span><button class="link" id="clearLog">清空</button></div>
+  <div class="log-list" id="logList"><div class="log-empty">暂无日志</div></div>
+</section>
+
+<footer>
+  <span>仅模拟点击 · 不改存档 · v0.2</span>
+  <button id="quit">退出程序</button>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal preview-modal" id="previewModal">
+  <div class="box">
+    <div class="phead">
+      <div><b>识别预览</b><span id="previewMeta">尚未识别</span></div>
+      <button class="close" id="previewClose">✕</button>
+    </div>
+    <div class="pbody" id="previewBody">
+      <div class="pempty" id="previewEmpty">点击「立即识别」<br>查看当前桌面的识别结果</div>
+      <img id="previewImg" alt="" style="display:none">
+    </div>
+    <div class="pfoot">
+      <span>绿框 = 可领取的宝箱</span>
+      <button id="openPreview">打开原图</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="quitModal">
+  <div class="box">
+    <h3>退出自动开箱？</h3>
+    <p>退出后将停止监控，不再自动领取宝箱。桌宠本身不会受到影响。</p>
+    <div class="btns">
+      <button id="quitCancel">继续运行</button>
+      <button class="danger" id="quitOk">退出</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOKEN = new URLSearchParams(location.search).get('token') || '';
+const $ = id => document.getElementById(id);
+
+async function get(path){
+  const r = await fetch(path, {headers:{'X-Token':TOKEN}});
+  if(!r.ok) throw new Error('http ' + r.status);
+  return r.json();
+}
+async function post(path, data){
+  const r = await fetch(path, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Token':TOKEN},
+    body:JSON.stringify(data || {})
+  });
+  if(!r.ok) throw new Error('http ' + r.status);
+  return r.json();
+}
+
+let bootAt = Date.now();
+let state = null;
+let lastLogSig = '';
+let lastClaimed = 0;
+let settingsLock = false;
+let toastTimer = null;
+
+function toast(msg, type='ok'){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.className = 'toast ' + type; }, 2200);
+}
+
+function animateNumber(el, from, to){
+  const start = performance.now();
+  const dur = 380;
+  function step(t){
+    const k = Math.min(1, (t-start)/dur);
+    const e = 1 - Math.pow(1-k, 3);
+    el.textContent = Math.round(from + (to-from)*e);
+    if(k < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function fmtTime(ts){
+  if(!ts) return '';
+  return new Date(ts*1000).toTimeString().slice(0,8);
+}
+
+function previewUrl(){
+  if(!state || !state.preview_ts) return '';
+  return '/preview.jpg?token=' + encodeURIComponent(TOKEN) + '&t=' + state.preview_ts;
+}
+
+function showPreview(){
+  const url = previewUrl();
+  if(!url){ toast('还没有识别结果，先点「立即识别」', 'warn'); return; }
+  const img = $('previewImg');
+  if(img.getAttribute('src') !== url) img.src = url;
+  img.style.display = 'block';
+  $('previewEmpty').style.display = 'none';
+  $('previewMeta').textContent = (state.preview_count || 0) + ' 个宝箱 · ' + fmtTime(state.preview_ts);
+  $('previewModal').classList.add('show');
+}
+
+function render(s){
+  state = s;
+  const paused = !s.enabled;
+  const busy = s.status === '领取中' || s.status === '检查中';
+  $('statusPill').className = 'pill' + (paused ? ' paused' : (busy ? ' busy' : ''));
+  $('statusText').textContent = s.status || (paused ? '已暂停' : '监控中');
+
+  if(s.claimed !== lastClaimed){
+    animateNumber($('claimed'), lastClaimed, s.claimed);
+    lastClaimed = s.claimed;
+  }
+  $('total').textContent = s.total || 0;
+
+  $('toggle').textContent = paused ? '继续监控' : '暂停监控';
+  $('toggle').className = 'primary' + (paused ? ' paused' : '');
+  $('hintText').textContent = paused
+    ? '已暂停，点击上方按钮继续监控'
+    : (busy ? '正在检查桌面，请稍候…' : '正在监控桌面，发现宝箱会自动点击');
+  $('hint').className = 'hint' + (paused ? ' paused' : '');
+
+  const now = Date.now()/1000;
+  const remain = Math.max(0, (s.next_scan_at || 0) - now);
+  const total = Math.max(1, s.interval || 15);
+  const p = paused ? 0 : Math.max(0, Math.min(1, 1 - remain/total));
+  $('ring').style.setProperty('--p', (p*100).toFixed(1));
+  $('countdown').textContent = paused ? '--' : Math.ceil(remain);
+
+  if(!settingsLock){
+    $('interval').value = s.interval;
+    $('intervalVal').textContent = s.interval + ' 秒';
+    $('autoStart').checked = !!s.auto_start;
+  }
+
+  renderLogs(s.logs || []);
+  document.body.classList.remove('offline');
+}
+
+function renderLogs(logs){
+  const sig = logs.map(l=>l.t+l.msg).join('|');
+  if(sig === lastLogSig) return;
+  lastLogSig = sig;
+  const box = $('logList');
+  if(!logs.length){
+    box.innerHTML = '<div class="log-empty">暂无日志</div>';
+    return;
+  }
+  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+  box.innerHTML = logs.slice(-40).map(l=>
+    `<div class="log-item ${l.level||'info'}"><span class="t">${l.t}</span><span class="m">${escapeHtml(l.msg)}</span></div>`
+  ).join('');
+  if(nearBottom) box.scrollTop = box.scrollHeight;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function tick(){
+  try{
+    const s = await get('/api/state');
+    render(s);
+  }catch(e){
+    document.body.classList.add('offline');
+    $('statusPill').className = 'pill off';
+    $('statusText').textContent = '已断开';
+    $('hintText').textContent = '后台连接已断开，程序可能已退出';
+  }
+}
+
+async function toggle(){
+  if(!state) return;
+  const target = !state.enabled;
+  if(target && !confirm('启动后会静默监控。\n\n发现宝箱时，软件会短暂移动并点击鼠标（约 0.3 秒）。\n请不要在游戏关键操作时运行。\n\n是否启动？')) return;
+  try{
+    await post('/api/toggle', {enabled:target});
+    toast(target ? '已继续监控' : '已暂停监控', target ? 'ok' : 'warn');
+    tick();
+  }catch(e){ toast('操作失败，请重试', 'warn'); }
+}
+
+async function scanNow(){
+  const btn = $('scan');
+  btn.disabled = true;
+  btn.querySelector('svg').classList.add('spin');
+  try{
+    const r = await post('/api/scan', {});
+    toast(r.count > 0 ? `识别到 ${r.count} 个宝箱` : '当前没有识别到宝箱', r.count > 0 ? 'ok' : 'warn');
+    await tick();
+    showPreview();
+  }catch(e){
+    toast('识别失败，请查看日志', 'warn');
+  }finally{
+    btn.disabled = false;
+    btn.querySelector('svg').classList.remove('spin');
+  }
+}
+
+$('toggle').onclick = toggle;
+$('scan').onclick = scanNow;
+$('preview').onclick = showPreview;
+$('folder').onclick = async ()=>{ try{ await post('/api/open',{target:'folder'}); }catch(e){} };
+$('openPreview').onclick = async ()=>{ try{ await post('/api/open',{target:'preview'}); }catch(e){} };
+$('previewClose').onclick = ()=> $('previewModal').classList.remove('show');
+$('clearLog').onclick = async ()=>{ try{ await post('/api/clear_log',{}); lastLogSig=''; tick(); }catch(e){} };
+
+$('interval').addEventListener('pointerdown', ()=>{ settingsLock = true; });
+$('interval').addEventListener('input', e=>{
+  settingsLock = true;
+  $('intervalVal').textContent = e.target.value + ' 秒';
+});
+$('interval').addEventListener('change', async e=>{
+  if(!state || Date.now() - bootAt < 1500) return;
+  settingsLock = true;
+  try{
+    await post('/api/config', {interval_sec: parseInt(e.target.value,10)});
+    toast('检查间隔已更新', 'ok');
+  }catch(err){ toast('保存失败', 'warn'); }
+  setTimeout(()=>{ settingsLock=false; }, 350);
+});
+$('autoStart').addEventListener('change', async e=>{
+  settingsLock = true;
+  try{
+    await post('/api/config', {auto_start: e.target.checked});
+    toast(e.target.checked ? '下次启动将自动监控' : '下次启动需手动开始', 'ok');
+  }catch(err){ toast('保存失败', 'warn'); }
+  setTimeout(()=>{ settingsLock=false; }, 600);
+});
+
+$('quit').onclick = ()=> $('quitModal').classList.add('show');
+$('quitCancel').onclick = ()=> $('quitModal').classList.remove('show');
+$('quitOk').onclick = async ()=>{
+  $('quitModal').classList.remove('show');
+  try{ await post('/api/quit', {}); }catch(e){}
+  document.body.innerHTML = '<div style="height:100vh;display:grid;place-items:center;color:#5f6c80;font-size:12px;font-family:Microsoft YaHei UI">已退出</div>';
+  setTimeout(()=>{ try{ window.close(); }catch(e){} }, 150);
+};
+
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape'){
+    $('quitModal').classList.remove('show');
+    $('previewModal').classList.remove('show');
+  }
+  if(e.key === ' ' && e.target.tagName !== 'INPUT' && !document.querySelector('.modal.show')){ e.preventDefault(); toggle(); }
+});
+
+setInterval(tick, 700);
+tick();
+</script>
+</body>
+</html>

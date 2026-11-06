@@ -1,0 +1,8 @@
+# 运行依赖（Python 3.10+，需要自带 tkinter 的官方安装包）
+opencv-python-headless>=4.8
+numpy>=1.24
+pillow>=10.0
+pystray>=0.19
+
+# 仅打包时需要
+pyinstaller>=6.0
