@@ -38,9 +38,13 @@ jobs:
           name: WuwaTappoAutoChest
           path: dist/WuwaTappoAutoChest.exe
 
-      - name: Attach to release
+      - name: Publish to release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/WuwaTappoAutoChest.exe
-          generate_release_notes: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          gh release view "$tag" >/dev/null 2>&1 || \
+            gh release create "$tag" --title "$tag" --generate-notes
+          gh release upload "$tag" dist/WuwaTappoAutoChest.exe --clobber
