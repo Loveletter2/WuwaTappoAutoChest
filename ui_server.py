@@ -262,10 +262,10 @@ class UiServer:
             ac.log("已暂停监控", "warn")
 
     def scan_now(self) -> dict:
-        img, vx, vy = ac.grab_bgr()
-        candidates = ac.find_chests(img, self.cfg)
-        chests = [m for m in candidates if ac.is_pet_window(vx + m.cx, vy + m.cy)[0]]
-        annotated = ac.annotate(img, chests, ac.BASE_DIR / "detect_preview.png")
+        res = ac.detect(self.cfg)
+        chests = res.chests
+        candidates = res.candidates
+        annotated = ac.annotate(res.grab.bgr, chests, ac.BASE_DIR / "detect_preview.png", res.grab)
 
         h, w = annotated.shape[:2]
         scale = min(1.0, 900.0 / max(w, 1))
@@ -448,6 +448,7 @@ def run_ui(cfg: dict, auto_stop_sec: float = 0) -> None:
     except Exception as e:
         ac.log(f"打开面板失败: {e}", "warn")
     ac.log(f"控制面板已启动（127.0.0.1:{port}）", "ok")
+    ac.log(ac.describe_displays())
 
     def open_panel(icon_, item):
         try:

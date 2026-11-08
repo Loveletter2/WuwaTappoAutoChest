@@ -43,7 +43,10 @@ def _asset(name: str) -> Path:
 class MiniApp:
     def __init__(self, cfg: dict, auto_stop_sec: float = 0):
         self.cfg = cfg
-        self.scale = max(1.0, ctypes.windll.user32.GetDpiForSystem() / 96.0)
+        # 按“鼠标所在显示器”的缩放来定尺寸：多屏混用缩放时，
+        # 主屏 100% + 副屏 150% 也不会把窗口画得过大或过小。
+        self.screen = ac.cursor_monitor()
+        self.scale = max(1.0, self.screen.scale)
         self.stop_event = threading.Event()
         self.enabled = threading.Event()
         self._log_sig = ""
@@ -57,7 +60,6 @@ class MiniApp:
         self.root = tk.Tk()
         self.root.title("WuwaTappo 自动开箱")
         self.root.configure(bg=BG)
-        self.root.resizable(False, False)
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self._set_icon()
@@ -95,11 +97,22 @@ class MiniApp:
             pass
 
     def _position(self):
+        """放到鼠标所在显示器的左下角；不再固定用主屏尺寸/系统 DPI。
+
+        尺寸用 minsize/maxsize 钉死，而不是 resizable(False, False)：
+        后者的 WM_NORESIZE 在把窗口拖到“另一块不同缩放比例”的显示器上时，
+        会被系统按 DPI 反复压缩横向尺寸（越拖越窄，直到最小宽度）。
+        """
         w, h = self.s(380), self.s(540)
-        sw = self.root.winfo_screenwidth()
-        sh = self.root.winfo_screenheight()
-        x = self.s(40)
-        y = max(self.s(40), sh - h - self.s(80))
+        mon = self.screen
+        left, top, right, bottom = mon.work if mon.work != (0, 0, 0, 0) else (mon.left, mon.top, mon.right, mon.bottom)
+        x = left + self.s(40)
+        y = max(top + self.s(40), bottom - h - self.s(80))
+        x = min(x, max(left, right - w))
+
+        self.root.resizable(True, True)  # 交给 minsize/maxsize 限制，避免跨 DPI 拖动时被压缩
+        self.root.minsize(w, h)
+        self.root.maxsize(w, h)
         self.root.geometry(f"{w}x{h}+{x}+{y}")
 
     def _dark_titlebar(self):
@@ -223,7 +236,7 @@ class MiniApp:
         self.log_text.tag_configure("warn", foreground=WARN)
         self.log_text.tag_configure("err", foreground=ERR)
 
-        tk.Label(self.root, text="仅模拟点击 · 不改存档 · v0.2", bg=BG, fg=DIM,
+        tk.Label(self.root, text="仅模拟点击 · 不改存档 · v0.3", bg=BG, fg=DIM,
                  font=("Microsoft YaHei UI", 8)).pack(pady=(0, self.s(8)))
 
     # ---------- actions ----------
